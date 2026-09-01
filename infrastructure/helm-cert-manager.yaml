@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-crypto-engine
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: 'https://jetstack.io'
+    chart: cert-manager
+    targetRevision: v1.15.0
+    helm:
+      releaseName: cert-manager
+      valuesInline:
+        installCRDs: true
+        replicaCount: 2
+  destination:
+    server: 'https://default.svc'
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
