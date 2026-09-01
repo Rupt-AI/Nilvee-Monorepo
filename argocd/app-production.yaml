@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monorepo-services-production
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com'
+    targetRevision: HEAD
+    path: enterprise-devops/application/overlays/prod
+  destination:
+    server: 'https://default.svc'
+    namespace: infra-production
+  # Manual Sync Policy enforces strict enterprise release governance
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
