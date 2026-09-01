@@ -1,0 +1,47 @@
+alertmanager:
+  config:
+    global:
+      resolve_timeout: 5m # Automatically cancels alerts if the container self-heals
+
+    # The Master Routing Tree: Filters incoming alerts by their severity labels
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 30s      # Buffer alerts for 30 seconds to combine duplicates
+      group_interval: 5m   # Wait 5 minutes before sending updates for an active incident
+      repeat_interval: 12h # Wait 12 hours before re-sending an alert notification
+      receiver: 'slack-default-channel' # Fallback destination
+
+      routes:
+        - match:
+            severity: warning
+          receiver: 'slack-default-channel'
+        - match:
+            severity: critical
+          receiver: 'pagerduty-on-call'
+
+    receivers:
+      # =========================================================================
+      # RECEIVER 1: SLACK WEBHOOK ROUTING
+      # =========================================================================
+      - name: 'slack-default-channel'
+        slack_configs:
+          - api_url: 'https://slack.com' # Encrypted Slack Hook placeholder
+            channel: '#devops-alerts'
+            send_resolved: true # Post a green notification when the issue recovers
+            text: >-
+              {{ range .Alerts }}
+                *Alert:* {{ .Annotations.summary }}
+                *Description:* {{ .Annotations.description }}
+                *Severity:* {{ .Labels.severity }}
+                *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+              {{ end }}
+
+      # =========================================================================
+      # RECEIVER 2: PAGERDUTY ALERTS ENGINE
+      # =========================================================================
+      - name: 'pagerduty-on-call'
+        pagerduty_configs:
+          - routing_key: 'pd-integration-key-alpha-numeric-token-goes-here' # Secure PagerDuty Integration Key placeholder
+            send_resolved: true
+            client: 'EKS Production Prometheus Monitor'
+            description: '{{ .CommonAnnotations.summary }} - {{ .CommonLabels.alertname }}'
