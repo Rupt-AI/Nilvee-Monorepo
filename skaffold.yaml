@@ -1,0 +1,22 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: enterprise-monorepo-sync
+build:
+  artifacts:
+    - image: internal-registry.io/order-app
+      context: ./enterprise-devops/application/base
+      docker:
+        dockerfile: Dockerfile
+    - image: internal-registry.io/billing-app
+      context: ./enterprise-devops/application/base
+      docker:
+        dockerfile: Dockerfile
+  local:
+    push: true
+manifests:
+  kustomize:
+    paths:
+      - enterprise-devops/application/overlays/dev
+deploy:
+  kubectl: {}
