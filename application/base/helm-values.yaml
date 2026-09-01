@@ -1,0 +1,14 @@
+containerPorts:
+  http: 8080
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 15
+  periodSeconds: 5
+metrics:
+  enabled: true
+  service:
+    port: 9113
