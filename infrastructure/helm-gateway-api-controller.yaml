@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway-api-ingress-controller
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.io'
+    chart: ingress-nginx
+    targetRevision: 4.10.0
+    helm:
+      releaseName: gateway-ingress
+      valuesInline:
+        controller:
+          ingressClassResource:
+            enabled: true
+            name: gateway-api-controller
+          service:
+            annotations:
+              service.beta.kubernetes.io/aws-load-balancer-type: "external"
+              service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance"
+              service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+  destination:
+    server: 'https://default.svc'
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
