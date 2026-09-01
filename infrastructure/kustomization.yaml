@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - cluster-secret-store.yaml
+  - cert-manager-issuer.yaml
+  - slo-rules.yaml
+  - helm-postgres-operator.yaml
+  - helm-mongodb-operator.yaml
+  - helm-influxdb-operator.yaml
+  - helm-argo-rollouts.yaml
+  - helm-gateway-api-controller.yaml
+  - helm-external-dns.yaml
+  - helm-cert-manager.yaml
+  - helm-loki-stack.yaml
+  - helm-prometheus-stack.yaml
