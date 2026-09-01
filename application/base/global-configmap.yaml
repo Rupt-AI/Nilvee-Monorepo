@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: corporate-global-runtime-properties
+  namespace: data-tier
+data:
+  CLUSTER_REGION: "us-east-1"
+  ENABLE_TRACE_CORRELATION: "true"
+  METRICS_COLLECTION_INTERVAL: "15s"
+  CONNECTION_TIMEOUT_MS: "5000"
+  MAX_RETRIES: "3"
