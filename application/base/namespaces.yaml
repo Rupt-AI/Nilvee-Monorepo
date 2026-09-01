@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data-tier
+  labels:
+    tier: infrastructure-data
+    security-zone: tier-3
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: orders-domain
+  labels:
+    domain: commerce-orders
+    security-zone: tier-2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: billing-domain
+  labels:
+    domain: corporate-billing
+    security-zone: tier-2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: catalog-domain
+  labels:
+    domain: product-catalog
+    security-zone: tier-2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: telemetry-domain
+  labels:
+    domain: platform-telemetry
+    security-zone: tier-2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: security-auth-domain
+  labels:
+    domain: platform-authentication
+    security-zone: tier-1
