@@ -1,0 +1,43 @@
+apiVersion: ://coreos.com
+kind: PrometheusRule
+metadata:
+  name: core-web-slo-alerts
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    release: cluster-monitoring
+spec:
+  groups:
+    - name: application-slo-metrics
+      rules:
+        # ===================================================================
+        # SLO 1: AVAILABILITY (99.9% Success Rate over 30 days)
+        # ===================================================================
+        # SLI Equation: Total successful requests divided by total incoming traffic
+        - alert: SLOAvailabilityBurnRateHigh
+          expr: |
+            sum(rate(http_requests_total{status=~"5.."}[5m])) 
+            / 
+            sum(rate(http_requests_total[5m])) > 0.001
+          for: 2m
+          labels:
+            severity: critical
+            tier: platform
+          annotations:
+            summary: "Production availability SLO is burning through its error budget!"
+            description: "The current 5xx error rate is {{ $value }}, which breaches the 99.9% availability target."
+
+        # ===================================================================
+        # SLO 2: LATENCY (95% of Requests Under 500ms over 30 days)
+        # ===================================================================
+        # SLI Equation: Count of requests under the 0.5s bucket divided by total traffic
+        - alert: SLOLatencyBreached
+          expr: |
+            histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+            tier: platform
+          annotations:
+            summary: "Production latency SLO threshold breached."
+            description: "95% of user requests are taking longer than 500ms (Current p95 is {{ $value }}s)."
