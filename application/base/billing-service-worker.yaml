@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-async-worker
+  namespace: billing-domain
+  labels:
+    app: billing-worker
+    tier: compute
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: billing-worker
+  template:
+    metadata:
+      labels:
+        app: billing-worker
+    spec:
+      containers:
+        - name: job-consumer
+          image: internal-registry.io/billing-worker:placeholder
+          command: ["npm", "run", "worker:start"]
+          envFrom:
+            - configMapRef:
+                name: corporate-global-runtime-properties
+          env:
+            - name: REDIS_HOST
+              value: "billing-redis-service.billing-domain.svc.cluster.local"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: DATABASE_URL
+              value: "postgresql://postgres:prod-password@orders-db-service.orders-domain.svc.cluster.local:5432/ordersdb"
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+            requests:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
