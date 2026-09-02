@@ -1,0 +1,42 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: prod-edge-gateway
+  namespace: infra-production
+spec:
+  gatewayClassName: gateway-api-controller
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: prod-canary-web-route
+  namespace: infra-production
+spec:
+  parentRefs:
+    - name: prod-edge-gateway
+  hostnames:
+    - "://yourcompany.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /orders
+      backendRefs:
+        - name: prod-order-processor-service
+          port: 8080
+          weight: 100
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /billing
+      backendRefs:
+        - name: prod-billing-manager-service
+          port: 8080
+          weight: 100
