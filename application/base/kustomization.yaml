@@ -22,3 +22,4 @@ helmCharts:
     releaseName: core-web
     valuesFile: helm-values.yaml
     includeCRDs: true
+
