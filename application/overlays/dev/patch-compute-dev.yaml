@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-async-worker
+  namespace: billing-domain
+spec:
+  replicas: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stateless-token-auth
+  namespace: security-auth-domain
+spec:
+  replicas: 1
