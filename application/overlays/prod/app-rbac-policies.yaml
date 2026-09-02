@@ -1,32 +1,31 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prod-microservice-read-only-role
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "watch", "list"]
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: order-processor-sa
   namespace: orders-domain
-  automountServiceAccountToken: false # Block pod from stealing the master API token if cracked
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: order-processor-restricted-role
-  namespace: orders-domain
-rules:
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["get", "watch", "list"] # Enforce strict read-only application parameter ingestion
+  automountServiceAccountToken: false
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: order-processor-rbac-bind
+  name: prod-order-processor-rbac-bind
   namespace: orders-domain
 subjects:
   - kind: ServiceAccount
     name: order-processor-sa
     namespace: orders-domain
 roleRef:
-  kind: Role
-  name: order-processor-restricted-role
+  kind: ClusterRole
+  name: prod-microservice-read-only-role
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: v1
@@ -35,3 +34,17 @@ metadata:
   name: billing-worker-sa
   namespace: billing-domain
   automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: prod-billing-worker-rbac-bind
+  namespace: billing-domain
+subjects:
+  - kind: ServiceAccount
+    name: billing-worker-sa
+    namespace: billing-domain
+roleRef:
+  kind: ClusterRole
+  name: prod-microservice-read-only-role
+  apiGroup: rbac.authorization.k8s.io
