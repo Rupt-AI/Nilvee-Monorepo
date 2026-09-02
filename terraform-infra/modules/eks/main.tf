@@ -1,7 +1,12 @@
+# ==============================================================================
+# PHASE 1 COMPLETE COMPUTE ENGINE & STORAGE CLASS ATTACHMENT
+# ==============================================================================
+
 variable "cluster_name" { type = string }
 variable "vpc_id" { type = string }
 variable "private_subnets" { type = list(string) }
 
+# 1. IAM Role for EKS Control Plane
 resource "aws_iam_role" "cluster" {
   name = "${var.cluster_name}-control-plane-role"
 
@@ -16,6 +21,7 @@ resource "aws_iam_role_policy_attachment" "cluster_policy" {
   role       = aws_iam_role.cluster.name
 }
 
+# 2. Managed EKS Cluster Control Plane Core
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
   role_arn = aws_iam_role.cluster.arn
@@ -30,6 +36,7 @@ resource "aws_eks_cluster" "main" {
   depends_on = [aws_iam_role_policy_attachment.cluster_policy]
 }
 
+# 3. OIDC Provider Configuration for IRSA
 data "tls_certificate" "eks" {
   url = aws_eks_cluster.main.identity.oidc.issuer
 }
@@ -40,6 +47,7 @@ resource "aws_iam_openid_connect_provider" "eks" {
   url             = aws_eks_cluster.main.identity.oidc.issuer
 }
 
+# 4. IAM Role for Managed Worker Nodes
 resource "aws_iam_role" "nodes" {
   name = "${var.cluster_name}-worker-node-role"
 
@@ -59,6 +67,7 @@ resource "aws_iam_role_policy_attachment" "node_policies" {
   policy_arn = each.value
 }
 
+# 5. Managed Elastic Node Groups
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "production-ha-workers"
@@ -77,11 +86,18 @@ resource "aws_eks_node_group" "main" {
   depends_on = [aws_iam_role_policy_attachment.node_policies]
 }
 
+# 6. AWS EBS CSI Driver Add-On Engine (Prevents Persistent Volume Mounting Deadlocks)
 resource "aws_eks_addon" "ebs_csi" {
   cluster_name             = aws_eks_cluster.main.name
   addon_name               = "aws-ebs-csi-driver"
   addon_version            = "v1.30.0-eksbuild.1"
   service_account_role_arn = aws_iam_role.ebs_csi_role.arn
+
+  tags = {
+    Component = "StorageController"
+    Layer     = "Infrastructure"
+    ManagedBy = "Terraform"
+  }
 }
 
 resource "aws_iam_role" "ebs_csi_role" {
@@ -93,7 +109,11 @@ resource "aws_iam_role" "ebs_csi_role" {
       Effect    = "Allow"
       Principal = { Federated = aws_iam_openid_connect_provider.eks.arn }
       Action    = "sts:AssumeRoleWithWebIdentity"
-      Condition = { StringEquals = { "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa" } }
+      Condition = {
+        StringEquals = {
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+        }
+      }
     }]
   })
 }
@@ -103,6 +123,7 @@ resource "aws_iam_role_policy_attachment" "ebs_csi_attach" {
   role       = aws_iam_role.ebs_csi_role.name
 }
 
+# 7. Federated Identity Provider for GitHub Actions (Passwordless OIDC Pipeline Authentication)
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://githubusercontent.com"
   client_id_list  = ["://amazonaws.com"]
@@ -120,12 +141,13 @@ resource "aws_iam_role" "github_actions_role" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = { "://githubusercontent.com:aud" = "://amazonaws.com" }
-        StringLike   = { "://githubusercontent.com:sub" = "repo:your-org/monorepo-enterprise:*" }
+        StringLike   = { "://githubusercontent.com:sub" = "repo:Rupt-AI/Nilvee-Monorepo:*" }
       }
     }]
   })
 }
 
+# 8. External Secrets Operator IAM Sync Platform Controls
 resource "aws_iam_role" "eso_role" {
   name = "${var.cluster_name}-eso-cloud-vault-role"
 
@@ -149,8 +171,7 @@ resource "aws_iam_policy" "eso_policy" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "eso_attach" { role = aws_iam_role.eso_role.name; policy_arn = aws_iam_policy.eso_policy.arn }
-
-output "cluster_endpoint" { value = aws_eks_cluster.main.endpoint }
-output "github_actions_role_arn" { value = aws_iam_role.github_actions_role.arn }
-output "eso_iam_role_arn" { value = aws_iam_role.eso_role.arn }
+resource "aws_iam_role_policy_attachment" "eso_attach" {
+  role       = aws_iam_role.eso_role.name
+  policy_arn = aws_iam_policy.eso_policy.arn
+}
