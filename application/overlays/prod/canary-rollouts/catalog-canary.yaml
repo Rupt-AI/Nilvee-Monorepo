@@ -17,7 +17,6 @@ spec:
       containers:
         - name: application
           image: internal-registry.io/catalog-app:latest
-          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
               name: http
@@ -44,6 +43,12 @@ spec:
       trafficRouting:
         gateway:
           httpRouteName: prod-canary-web-route
+      analysis:
+        templates:
+          - templateName: corporate-success-rate-validator
+        args:
+          - name: service-name
+            value: catalog-search
       steps:
         - setWeight: 10
         - pause: { duration: 5m }
