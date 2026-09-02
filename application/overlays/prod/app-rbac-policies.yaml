@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: order-processor-sa
+  namespace: orders-domain
+  automountServiceAccountToken: false # Block pod from stealing the master API token if cracked
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: order-processor-restricted-role
+  namespace: orders-domain
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "watch", "list"] # Enforce strict read-only application parameter ingestion
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: order-processor-rbac-bind
+  namespace: orders-domain
+subjects:
+  - kind: ServiceAccount
+    name: order-processor-sa
+    namespace: orders-domain
+roleRef:
+  kind: Role
+  name: order-processor-restricted-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: billing-worker-sa
+  namespace: billing-domain
+  automountServiceAccountToken: false
