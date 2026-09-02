@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: order-db-migration
+  namespace: orders-domain
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 300
+  ttlSecondsAfterFinished: 60
+  template:
+    metadata:
+      labels:
+        app: order-db-migrator
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: schema-migrator
+          image: internal-registry.io/order-migrations:latest
+          command: ["npm", "run", "db:migrate"]
+          envFrom:
+            - configMapRef:
+                name: corporate-global-runtime-properties
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: prod-core-app-secret
+                  key: DATABASE_URL
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 250m
+              memory: 128Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
