@@ -1,0 +1,36 @@
+apiVersion: ://influxdata.com
+kind: InfluxDB2
+metadata:
+  name: telemetry-influxdb
+  namespace: telemetry-domain
+spec:
+  version: "2.7.5"
+  resources:
+    limits:
+      cpu: "1"
+      memory: 2Gi
+    requests:
+      cpu: "500m"
+      memory: 1Gi # Dedicated memory profile to process heavy mathematical log streams
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: premium-rwo
+        resources:
+          requests:
+            storage: 100Gi # Large volume allocation optimized for text metrics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetry-influxdb-service
+  namespace: telemetry-domain
+spec:
+  ports:
+    - port: 8086
+      targetPort: 8086
+      protocol: TCP
+      name: influxdb
+  selector:
+    app: telemetry-influxdb
