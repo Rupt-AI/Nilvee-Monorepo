@@ -14,7 +14,6 @@ spec:
   destination:
     server: 'https://default.svc'
     namespace: infra-production
-  # Manual Sync Policy enforces strict enterprise release governance
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
