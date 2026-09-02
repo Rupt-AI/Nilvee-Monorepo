@@ -1,0 +1,42 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: staging-edge-gateway
+  namespace: infra-staging
+spec:
+  gatewayClassName: gateway-api-controller
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: staging-web-route
+  namespace: infra-staging
+spec:
+  parentRefs:
+    - name: staging-edge-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: staging-billing-transaction-manager
+          port: 8080
+    - matches:
+        - path:
+            type: Exact
+            value: /chaos-test
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            statusCode: 503
+      backendRefs:
+        - name: staging-billing-transaction-manager
+          port: 8080
