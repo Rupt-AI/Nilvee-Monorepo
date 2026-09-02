@@ -19,3 +19,30 @@ configMapGenerator:
     literals:
       - ENVIRONMENT=production
       - LOG_LEVEL=warn
+
+patches:
+  - target:
+      kind: Deployment
+      name: order-processor-engine
+      namespace: orders-domain
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 5
+  - target:
+      kind: Deployment
+      name: billing-transaction-manager
+      namespace: billing-domain
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 5
+  - target:
+      kind: Deployment
+      name: stateless-token-auth
+      namespace: security-auth-domain
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 5
+
