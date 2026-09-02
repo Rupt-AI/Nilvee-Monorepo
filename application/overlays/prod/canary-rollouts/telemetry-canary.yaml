@@ -44,8 +44,18 @@ spec:
       trafficRouting:
         gateway:
           httpRouteName: prod-canary-web-route
+      # ==============================================================================
+      # REMEDIATION: AUTOMATED BACKGROUND ANALYSIS LOOP (Enables Auto-Rollback Engine)
+      # ==============================================================================
+      analysis:
+        templates:
+          - templateName: corporate-success-rate-validator # Links straight to your global judge file
+        args:
+          - name: service-name
+            value: metrics-collector # Passes its unique service name directly into the PromQL filter
       steps:
         - setWeight: 10
-        - pause: { duration: 10m }
+        - pause: { duration: 10m } # Real-time analysis runs every 60s throughout this window
         - setWeight: 50
         - pause: { duration: 5m }
+
