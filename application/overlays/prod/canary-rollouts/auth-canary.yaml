@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: prod-stateless-token-auth
+  namespace: security-auth-domain
+spec:
+  replicas: 5
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: auth-engine
+  template:
+    metadata:
+      labels:
+        app: auth-engine
+    spec:
+      containers:
+        - name: application
+          image: internal-registry.io/auth-app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 128Mi
+            requests:
+              cpu: "250m"
+              memory: 64Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+  strategy:
+    canary:
+      trafficRouting:
+        gateway:
+          httpRouteName: prod-canary-web-route
+      steps:
+        - setWeight: 20
+        - pause: { duration: 5m }
+        - setWeight: 50
+        - pause: { duration: 5m }
