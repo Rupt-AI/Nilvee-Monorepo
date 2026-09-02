@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-processor-engine
+  namespace: orders-domain
+spec:
+  replicas: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stateless-token-auth
+  namespace: security-auth-domain
+spec:
+  replicas: 3
