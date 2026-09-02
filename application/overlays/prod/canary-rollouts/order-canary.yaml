@@ -18,6 +18,9 @@ spec:
       containers:
         - name: application
           image: internal-registry.io/order-app:latest
+          ports:
+            - containerPort: 8080
+              name: http
           resources:
             limits:
               cpu: "1"
@@ -41,6 +44,12 @@ spec:
       trafficRouting:
         gateway:
           httpRouteName: prod-canary-web-route
+      analysis:
+        templates:
+          - templateName: corporate-success-rate-validator
+        args:
+          - name: service-name
+            value: order-processor
       steps:
         - setWeight: 10
         - pause: { duration: 10m }
