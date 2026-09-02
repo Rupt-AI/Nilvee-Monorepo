@@ -6,6 +6,11 @@ resources:
   - app-rbac-policies.yaml
   - prod-routing.yaml
   - external-secret.yaml
+  - canary-rollouts/order-canary.yaml
+  - canary-rollouts/billing-canary.yaml
+  - canary-rollouts/catalog-canary.yaml
+  - canary-rollouts/telemetry-canary.yaml
+  - canary-rollouts/auth-canary.yaml
 
 namePrefix: prod-
 
@@ -14,26 +19,3 @@ configMapGenerator:
     literals:
       - ENVIRONMENT=production
       - LOG_LEVEL=warn
-
-patches:
-  - target:
-      kind: Deployment
-      name: billing-async-worker
-      namespace: billing-domain
-    path: canary-rollout.yaml
-  - target:
-      kind: Deployment
-      name: order-processor-engine
-      namespace: orders-domain
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 5
-  - target:
-      kind: Deployment
-      name: stateless-token-auth
-      namespace: security-auth-domain
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 5
