@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-processor-engine
+  namespace: orders-domain
+spec:
+  replicas: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-transaction-manager
+  namespace: billing-domain
+spec:
+  replicas: 1
