@@ -13,3 +13,4 @@ metadata:
   namespace: security-auth-domain
 spec:
   replicas: 1
+
