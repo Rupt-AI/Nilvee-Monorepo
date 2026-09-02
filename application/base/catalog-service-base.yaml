@@ -1,0 +1,44 @@
+apiVersion: ://mongodb.com
+kind: MongoDBCommunity
+metadata:
+  name: catalog-mongodb
+  namespace: catalog-domain
+spec:
+  members: 3 # High Availability: 1 Primary and 2 Secondary data replicas
+  type: ReplicaSet
+  version: "7.0.5"
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  statefulSet:
+    spec:
+      resources:
+        limits:
+          cpu: "1"
+          memory: 1Gi
+        requests:
+          cpu: "500m"
+          memory: 1Gi # Guaranteed resource allocation for document scaling stability
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: premium-rwo # Permanent AWS EBS gp3 SSD
+            resources:
+              requests:
+                storage: 50Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-mongodb-service
+  namespace: catalog-domain
+spec:
+  ports:
+    - port: 27017
+      targetPort: 27017
+      protocol: TCP
+      name: mongodb
+  selector:
+    app: catalog-mongodb
