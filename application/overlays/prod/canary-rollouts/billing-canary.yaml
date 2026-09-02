@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: prod-billing-transaction-manager
+  namespace: billing-domain
+spec:
+  replicas: 5
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: billing-manager
+  template:
+    metadata:
+      labels:
+        app: billing-manager
+    spec:
+      serviceAccountName: billing-worker-sa
+      containers:
+        - name: application
+          image: internal-registry.io/billing-app:latest
+          resources:
+            limits:
+              cpu: "2"
+              memory: 1Gi
+            requests:
+              cpu: "1"
+              memory: 512Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+  strategy:
+    canary:
+      trafficRouting:
+        gateway:
+          httpRouteName: prod-canary-web-route
+      steps:
+        - setWeight: 5
+        - pause: { duration: 15m }
+        - setWeight: 25
+        - pause: { duration: 10m }
+        - setWeight: 50
+        - pause: { duration: 5m }
