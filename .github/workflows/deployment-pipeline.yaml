@@ -30,11 +30,11 @@ jobs:
         id: filter
         with:
           filters: |
-            orders: ['enterprise-devops/application/base/order-service-base.yaml', 'enterprise-devops/application/base/order-service-db.yaml', 'enterprise-devops/application/base/order-service-migration.yaml', 'enterprise-devops/application/overlays/**']
-            billing: ['enterprise-devops/application/base/billing-service-base.yaml', 'enterprise-devops/application/base/billing-service-redis.yaml', 'enterprise-devops/application/base/billing-service-worker.yaml', 'enterprise-devops/application/overlays/**']
-            catalog: ['enterprise-devops/application/base/catalog-service-base.yaml', 'enterprise-devops/application/overlays/**']
-            telemetry: ['enterprise-devops/application/base/telemetry-service-base.yaml', 'enterprise-devops/application/overlays/**']
-            auth: ['enterprise-devops/application/base/auth-service-base.yaml', 'enterprise-devops/application/overlays/**']
+            orders: ['enterprise-devops/application/base/order-service-*.yaml', 'enterprise-devops/application/overlays/**']
+            billing: ['enterprise-devops/application/base/billing-service-*.yaml', 'enterprise-devops/application/overlays/**']
+            catalog: ['enterprise-devops/application/base/catalog-service-*.yaml', 'enterprise-devops/application/overlays/**']
+            telemetry: ['enterprise-devops/application/base/telemetry-service-*.yaml', 'enterprise-devops/application/overlays/**']
+            auth: ['enterprise-devops/application/base/auth-service-*.yaml', 'enterprise-devops/application/overlays/**']
 
   build-order-service:
     needs: detect-changes
@@ -46,7 +46,7 @@ jobs:
       - name: Authenticate to AWS via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::123456789012:role/prod-enterprise-cluster-github-actions-pipeline-role
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
           audience: ://amazonaws.com
       - name: Log into Amazon ECR
@@ -54,7 +54,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
       - name: Build and Push Order Container
         run: |
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/order-app:${{ github.sha }} -f ./enterprise-devops/application/base/Dockerfile .
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/order-app:${{ github.sha }} ./enterprise-devops/application/base
           docker push ${{ steps.login-ecr.outputs.registry }}/order-app:${{ github.sha }}
       - name: Update Order Version Tag
         run: |
@@ -64,34 +64,4 @@ jobs:
           git config --global user.email "gitops-bot@company.com"
           git add kustomization.yaml
           git commit -m "chore(gitops): bump order service to ${{ github.sha }} [skip ci]" || true
-          git push origin main || true
-
-  build-billing-service:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.billing == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code Base
-        uses: actions/checkout@v4
-      - name: Authenticate to AWS via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::123456789012:role/prod-enterprise-cluster-github-actions-pipeline-role
-          aws-region: us-east-1
-          audience: ://amazonaws.com
-      - name: Log into Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-      - name: Build and Push Billing Container
-        run: |
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/billing-app:${{ github.sha }} -f ./enterprise-devops/application/base/Dockerfile .
-          docker push ${{ steps.login-ecr.outputs.registry }}/billing-app:${{ github.sha }}
-      - name: Update Billing Version Tag
-        run: |
-          cd enterprise-devops/application/overlays/prod
-          kustomize edit set image internal-registry.io/billing-app=${{ steps.login-ecr.outputs.registry }}/billing-app:${{ github.sha }}
-          git config --global user.name "gitops-bot"
-          git config --global user.email "gitops-bot@company.com"
-          git add kustomization.yaml
-          git commit -m "chore(gitops): bump billing service to ${{ github.sha }} [skip ci]" || true
           git push origin main || true
